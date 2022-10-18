@@ -1,33 +1,23 @@
 import socket
+from threading import Thread
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('localhost', 9999))
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+client.connect(("127.0.0.1", 1234))
 
 
-def receive_data():
+def listen_server():
     while True:
-        data = client_socket.recv(1024)
-        print(_decode(data))
-        send_data()
+        data = client.recv(2048)  # receive
+        print(data.decode("utf-8"))
 
 
-def _decode(data: bytes):
-    return data.decode()
+def send_server():
+    Thread(target=listen_server).start()
+
+    while True:
+        client.send(input(":::").encode("utf-8"))
 
 
-def _encode(data: str):
-    return data.encode()
-
-
-def send_data():
-    data = input_message()
-    client_socket.send(_encode(data))
-
-
-def input_message():
-    data = input('data: ')
-    return data
-
-
-if __name__ == "__main__":
-    receive_data()
+if __name__ == '__main__':
+    send_server()

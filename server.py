@@ -1,32 +1,56 @@
 import socket
+import threading
+
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind(('localhost', 9999))
+server_socket.bind(("127.0.0.1", 1234))
+
 server_socket.listen()
+print("Server is listening")
+
+clients = []
 
 
-def accept_connection():
+def send_all(data, client_socket):
+    for client in clients:
+        if client != client_socket:
+            client.send(data)
+
+
+def listen_user(client_socket):
+    print("Listening user")
+
     while True:
-        client_socket, addr = server_socket.accept()
-        print('Connection from:', addr)
-        client_socket.send('hello'.encode())
-        receive_message(client_socket)
-
-
-def receive_message(client_socket: socket.socket):
-    while True:
-        data = client_socket.recv(1024)
-        print(data.decode())
+        data = client_socket.recv(2048)
         if data:
-            send_message(client_socket)
+            print(f"User sent {data}")
+        else:
+            print(client_socket, 'Отключился')
+            client_socket.close()
+            clients.remove(client_socket)
+
+        send_all(data, client_socket)
 
 
-def send_message(client_socket: socket.socket):
-    data = 'Hello'
-    client_socket.send(data.encode())
-    print('message send')
+def accept_client():
+    client_socket, address = server_socket.accept()
+    print(f"User <{address}> connected!")
+    return client_socket
+
+
+def start_server():
+    while True:
+        client_socket = accept_client()
+
+        clients.append(client_socket)
+
+        listen_accepted_user = threading.Thread(
+            target=listen_user,
+            args=(client_socket,)
+        )
+
+        listen_accepted_user.start()
 
 
 if __name__ == '__main__':
-    accept_connection()
+    start_server()
